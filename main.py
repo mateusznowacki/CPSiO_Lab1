@@ -163,6 +163,9 @@ class EKGApp(tk.Tk):
         btn_load = tk.Button(self.top_frame, text="Wczytaj plik EKG", command=self._on_load_file)
         btn_load.pack(side=tk.LEFT, padx=5)
 
+        btn_show = tk.Button(self.top_frame, text="Pokaż fragment", command=self._on_show_fragment)
+        btn_show.pack(side=tk.LEFT, padx=5)
+
     def _on_load_file(self):
         """Wczytanie pliku i narysowanie przebiegu na wykresie."""
         file_path = filedialog.askopenfilename(
@@ -192,6 +195,51 @@ class EKGApp(tk.Tk):
         self.ax.set_xlabel("Czas [s]")
         self.ax.set_ylabel("Amplituda")
         self.canvas.draw()
+
+    def _narysuj_fragment_sygnalu(self, czas_start, czas_end):
+        """Rysuje wycinek sygnału między czas_start a czas_end."""
+        t, sygnaly = self.platforma.pobierz_calosc()
+        if t is None or sygnaly is None:
+            return
+
+        idx_start = np.searchsorted(t, czas_start)
+        idx_end = np.searchsorted(t, czas_end)
+        idx_start = max(0, idx_start)
+        idx_end = min(len(t), idx_end)
+
+        t_fragment = t[idx_start:idx_end]
+        s_fragment = sygnaly[idx_start:idx_end, :]
+
+        self.ax.clear()
+        if s_fragment.shape[1] == 1:
+            self.ax.plot(t_fragment, s_fragment[:, 0], label="Fragment EKG")
+        else:
+            for i in range(s_fragment.shape[1]):
+                self.ax.plot(t_fragment, s_fragment[:, i], label=f"Ch {i+1}")
+            self.ax.legend()
+
+        self.ax.set_title(f"Fragment EKG: {czas_start:.2f}s – {czas_end:.2f}s")
+        self.ax.set_xlabel("Czas [s]")
+        self.ax.set_ylabel("Amplituda")
+        self.canvas.draw()
+
+    def _on_show_fragment(self):
+        """Wyświetla fragment sygnału (bez zapisywania)."""
+        start_txt = self.entry_start.get().strip()
+        end_txt = self.entry_end.get().strip()
+
+        try:
+            czas_start = float(start_txt)
+            czas_end = float(end_txt)
+        except ValueError:
+            print("Błędny format czasu!")
+            return
+
+        if czas_start < 0 or czas_end <= czas_start:
+            print("Nieprawidłowy zakres czasu!")
+            return
+
+        self._narysuj_fragment_sygnalu(czas_start, czas_end)
 
     def _on_save_fragment(self):
         """Zapisuje fragment (start, end) do pliku."""
