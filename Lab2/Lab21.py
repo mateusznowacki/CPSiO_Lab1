@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 class ImageApp(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -29,10 +30,10 @@ class ImageApp(tk.Tk):
         self.label.pack(padx=5, pady=5)
 
         # Zmienne przechowujące obraz
-        self.original_image = None   # PIL.Image
-        self.photo_image = None      # ImageTk.PhotoImage
-        self.np_image = None         # numpy array
-        self.cropped_image = None    # PIL.Image do zapisu
+        self.original_image = None  # PIL.Image
+        self.photo_image = None  # ImageTk.PhotoImage
+        self.np_image = None  # numpy array
+        self.cropped_image = None  # PIL.Image do zapisu
 
     def open_image(self):
         """Wczytywanie obrazu z pliku i wyświetlanie w GUI."""
@@ -119,38 +120,55 @@ class ImageApp(tk.Tk):
         plt.show()
 
     def crop_subimage(self):
-        """
-        Pobiera od użytkownika dwie pary współrzędnych (x1, y1) i (x2, y2),
-        a następnie wycina prostokątny obszar z obrazu.
-        """
+        """Tworzy okno do wpisania współrzędnych prostokąta i wycina podobszar."""
         if self.original_image is None:
             return
 
-        x1 = simpledialog.askinteger("Crop", "Podaj x1 (kolumna lewego górnego rogu):")
-        y1 = simpledialog.askinteger("Crop", "Podaj y1 (wiersz lewego górnego rogu):")
-        x2 = simpledialog.askinteger("Crop", "Podaj x2 (kolumna prawego dolnego rogu):")
-        y2 = simpledialog.askinteger("Crop", "Podaj y2 (wiersz prawego dolnego rogu):")
+        def confirm_crop():
+            try:
+                x1 = int(entry_x1.get())
+                y1 = int(entry_y1.get())
+                x2 = int(entry_x2.get())
+                y2 = int(entry_y2.get())
 
-        if None in (x1, y1, x2, y2):
-            return
+                if x1 > x2:
+                    x1, x2 = x2, x1
+                if y1 > y2:
+                    y1, y2 = y2, y1
 
-        # Upewniamy się, że x1 < x2 i y1 < y2 (jeśli odwrotnie, zamieniamy)
-        if x1 > x2:
-            x1, x2 = x2, x1
-        if y1 > y2:
-            y1, y2 = y2, y1
+                if (x1 < 0 or y1 < 0 or x2 > self.original_image.width or y2 > self.original_image.height):
+                    messagebox.showerror("Błąd", "Współrzędne wykraczają poza rozmiar obrazu.", parent=popup)
+                    return
 
-        # Sprawdzenie, czy wymiary obszaru mieszczą się w granicach obrazu
-        if (x1 < 0 or y1 < 0 or x2 > self.original_image.width or y2 > self.original_image.height):
-            messagebox.showerror("Błąd", "Współrzędne wykraczają poza rozmiar obrazu.")
-            return
+                # Wycięcie fragmentu i zamknięcie okna
+                self.cropped_image = self.original_image.crop((x1, y1, x2, y2))
+                self.show_image(self.cropped_image)
+                popup.destroy()
 
-        # Wycięcie fragmentu (left, upper, right, lower)
-        box = (x1, y1, x2, y2)
-        self.cropped_image = self.original_image.crop(box)
+            except ValueError:
+                messagebox.showerror("Błąd", "Podaj poprawne liczby całkowite.", parent=popup)
 
-        # Pokazujemy wycięty fragment
-        self.show_image(self.cropped_image)
+        # Okno dialogowe
+        popup = tk.Toplevel(self)
+        popup.title("Wprowadź współrzędne")
+        popup.grab_set()  # Zablokowanie innych okien do czasu zamknięcia
+
+        tk.Label(popup, text="x1 (lewy górny róg):").grid(row=0, column=0, sticky="e")
+        tk.Label(popup, text="y1 (lewy górny róg):").grid(row=1, column=0, sticky="e")
+        tk.Label(popup, text="x2 (prawy dolny róg):").grid(row=2, column=0, sticky="e")
+        tk.Label(popup, text="y2 (prawy dolny róg):").grid(row=3, column=0, sticky="e")
+
+        entry_x1 = tk.Entry(popup)
+        entry_y1 = tk.Entry(popup)
+        entry_x2 = tk.Entry(popup)
+        entry_y2 = tk.Entry(popup)
+
+        entry_x1.grid(row=0, column=1, padx=5, pady=2)
+        entry_y1.grid(row=1, column=1, padx=5, pady=2)
+        entry_x2.grid(row=2, column=1, padx=5, pady=2)
+        entry_y2.grid(row=3, column=1, padx=5, pady=2)
+
+        tk.Button(popup, text="OK", command=confirm_crop).grid(row=4, column=0, columnspan=2, pady=10)
 
     def save_subimage(self):
         """Zapisuje aktualnie wycięty fragment do wybranego pliku."""
@@ -171,6 +189,7 @@ class ImageApp(tk.Tk):
         if filename:
             self.cropped_image.save(filename)
             messagebox.showinfo("Informacja", f"Zapisano podobszar do pliku:\n{filename}")
+
 
 if __name__ == "__main__":
     app = ImageApp()
