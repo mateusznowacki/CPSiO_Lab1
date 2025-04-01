@@ -94,7 +94,7 @@ class ImageApp(tk.Tk):
         if self.np_image is None:
             return
 
-        col = simpledialog.askinteger("Profil pionowy", f"Podaj wiersz (0 <= wysokość <= {self.np_image.shape[1] - 1}):")
+        col = simpledialog.askinteger("Profil pionowy", f"Podaj wiersz (0 <= szerokość <= {self.np_image.shape[1] - 1}):")
         if col is None:
             return
 
