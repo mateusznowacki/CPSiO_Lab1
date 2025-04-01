@@ -37,14 +37,14 @@ class ECGFFTApp(tk.Tk):
         self.run_btn = tk.Button(self.bottom_controls, text="Uruchom analizę", command=self.run_analysis)
         self.run_btn.pack()
 
-        tk.Label(self.bottom_controls, text="Zakres próbek: od").pack(side=tk.LEFT)
+        tk.Label(self.bottom_controls, text="Zakres czasu [s]: od").pack(side=tk.LEFT)
         self.start_entry = tk.Entry(self.bottom_controls, width=6)
-        self.start_entry.insert(0, "0")
+        self.start_entry.insert(0, "0.0")
         self.start_entry.pack(side=tk.LEFT)
 
         tk.Label(self.bottom_controls, text="do").pack(side=tk.LEFT)
         self.end_entry = tk.Entry(self.bottom_controls, width=6)
-        self.end_entry.insert(0, str(self.N))
+        self.end_entry.insert(0, f"{self.N / self.fs-0.01:.2f}")
         self.end_entry.pack(side=tk.LEFT)
 
         self.range_btn = tk.Button(self.bottom_controls, text="Zastosuj zakres", command=self.run_analysis)
@@ -52,18 +52,21 @@ class ECGFFTApp(tk.Tk):
 
     def run_analysis(self):
         try:
-            start = int(self.start_entry.get())
-            end = int(self.end_entry.get())
+            time_start = float(self.start_entry.get())
+            time_end = float(self.end_entry.get())
         except ValueError:
-            print("Zakres musi być liczbą całkowitą.")
+            print("Zakres czasu musi być liczbą.")
             return
 
-        if start < 0 or end > self.N or start >= end:
-            print("Nieprawidłowy zakres.")
+        if time_start < 0 or time_end > self.N / self.fs or time_start >= time_end:
+            print("Nieprawidłowy zakres czasu.")
             return
 
-        signal = self.signal[start:end]
-        t = np.arange(start, end) / self.fs
+        idx_start = int(time_start * self.fs)
+        idx_end = int(time_end * self.fs)
+
+        signal = self.signal[idx_start:idx_end]
+        t = np.arange(idx_start, idx_end) / self.fs
         fft_vals = np.fft.fft(signal)
         amplitude = np.abs(fft_vals)
         freqs = np.fft.fftfreq(len(signal), d=1/self.fs)
